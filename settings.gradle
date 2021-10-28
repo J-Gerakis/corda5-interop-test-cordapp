@@ -21,7 +21,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'corda5-solar-system-contracts-demo'
+rootProject.name = 'corda5-interop-test-cordapp'
 
 include('contracts')
 include('workflows')

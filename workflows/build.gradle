@@ -8,7 +8,7 @@ cordapp {
     targetPlatformVersion 1000
     minimumPlatformVersion 999
     workflow {
-        name "Corda 5 Solar System Contracts Demo - Workflows"
+        name "Corda 5 Interop Test Cordapp - Workflows"
         versionId 1
         vendor "R3"
     }
@@ -90,7 +90,7 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    archiveBaseName = 'corda5-solar-system-contracts-demo-workflows'
+    archiveBaseName = 'corda5-interop-test-cordapp-workflows'
 }
 
 cpb {

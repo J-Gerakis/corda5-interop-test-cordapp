@@ -1,0 +1,15 @@
+nodes:
+  adele:
+    debug: true
+    x500: "C=IE, L=THIRD, O=ADELE"
+  bonnie:
+    debug: true
+    x500: "C=GB, L=FOURTH, O=BONNIE"
+  clarence:
+    debug: true
+    x500: "C=GB, L=FOURTH, O=CLARENCE"
+  danny:
+    debug: true
+    x500: "C=GB, L=FOURTH, O=DANNY"
+  notary:
+    notary: true
