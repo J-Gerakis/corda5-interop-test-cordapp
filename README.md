@@ -38,7 +38,7 @@ to other participant nodes
 2. Build the app with `gradlew build`
 3. Build the Cordapp with the cordapp-builder CLI util `cordapp-builder create --cpk contracts\build\libs\<CPK FILE NAME> --cpk workflows\build\libs\<CPK FILE NAME> -o fruit-trading.cpb`
 4. Configure the network with `corda-cli network config docker-compose fruit-trading`
-5. Build the network deployment dockerfile using corda-cli `corda-cli network deploy -n solar-system -f solar-system.yaml > docker-compose.yaml`
+5. Build the network deployment dockerfile using corda-cli `corda-cli network deploy -n fruit-trading -f fruit-trading.yaml > docker-compose.yaml`
 6. Deploy the network using docker-compose `docker-compose -f docker-compose.yaml up -d`
 7. When deployed check the status with corda-cli `corda-cli network status -n fruit-trading` note the mapped web ports for Http RPC
 8. Install the application on the network using corda-cli `corda-cli package install -n fruit-trading fruit-trading.cpb`
@@ -48,3 +48,10 @@ to other participant nodes
 - Login using the button on the top right usernames and passwords are as follows: `user1` and `password`
 - Launch the `ExchangeFruitFault` via the Start Flow api 
 
+### Updating the deployed Corda 5 binary
+
+- Do the `Deployment via Corda-CLI` process 1 to 6
+- Checkout the Corda 5 branch you want to use and cd' into the branch folder
+- Build locally `gradlew osgi-framework-bootstrap:flaskJar`
+- Update `corda-cli network update -n fruit-trading osgi-framework-bootstrap/build/libs/corda-5.0.0-DevPreview-0-SNAPSHOT.jar`
+- Deploy your .cpk/.cpb (step 7)
