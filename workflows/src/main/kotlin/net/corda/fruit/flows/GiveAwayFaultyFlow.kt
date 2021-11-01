@@ -1,8 +1,8 @@
-package net.corda.solarsystem.flows
+package net.corda.fruit.flows
 
-import net.corda.solarsystem.contracts.FruitContract
-import net.corda.solarsystem.states.FruitState
-import net.corda.solarsystem.states.FruitType
+import net.corda.fruit.contracts.FruitContract
+import net.corda.fruit.states.FruitState
+import net.corda.fruit.states.FruitType
 import net.corda.systemflows.CollectSignaturesFlow
 import net.corda.systemflows.FinalityFlow
 import net.corda.systemflows.ReceiveFinalityFlow
@@ -17,7 +17,6 @@ import net.corda.v5.application.services.IdentityService
 import net.corda.v5.application.services.json.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.contracts.Command
-import net.corda.v5.ledger.contracts.Requirements.using
 import net.corda.v5.ledger.contracts.requireThat
 import net.corda.v5.ledger.services.NotaryLookupService
 import net.corda.v5.ledger.transactions.SignedTransaction

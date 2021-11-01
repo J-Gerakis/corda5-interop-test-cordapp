@@ -1,6 +1,6 @@
-package net.corda.solarsystem.schema
+package net.corda.fruit.schema
 
-import net.corda.solarsystem.states.FruitType
+import net.corda.fruit.states.FruitType
 import net.corda.v5.ledger.schemas.PersistentState
 import net.corda.v5.persistence.MappedSchema
 import net.corda.v5.persistence.UUIDConverter
@@ -21,7 +21,7 @@ object FruitSchemaV1: MappedSchema(
     @Entity
     @NamedQuery(
         name = "FruitSchemaV1.PersistentFruit.FindAll",
-        query = "FROM net.corda.solarsystem.schema.FruitSchemaV1\$PersistentFruit"
+        query = "FROM net.corda.fruit.schema.FruitSchemaV1\$PersistentFruit"
     )
     @Table(name = "fruit_states")
     class PersistentFruit(

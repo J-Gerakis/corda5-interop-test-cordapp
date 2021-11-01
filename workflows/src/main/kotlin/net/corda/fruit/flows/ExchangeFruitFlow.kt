@@ -1,8 +1,8 @@
-package net.corda.solarsystem.flows
+package net.corda.fruit.flows
 
-import net.corda.solarsystem.contracts.FruitContract
-import net.corda.solarsystem.states.FruitState
-import net.corda.solarsystem.states.FruitType
+import net.corda.fruit.contracts.FruitContract
+import net.corda.fruit.states.FruitState
+import net.corda.fruit.states.FruitType
 import net.corda.systemflows.CollectSignaturesFlow
 import net.corda.systemflows.FinalityFlow
 import net.corda.systemflows.ReceiveFinalityFlow
@@ -26,27 +26,21 @@ import net.corda.v5.ledger.transactions.TransactionBuilderFactory
 
 @InitiatingFlow
 @StartableByRPC
-class ExchangeFaultyFlow @JsonConstructor constructor(private val params: RpcStartFlowRequestParameters) :
+class ExchangeFruitFlow @JsonConstructor constructor(private val params: RpcStartFlowRequestParameters) :
     Flow<SignedTransactionDigest> {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
-
     @CordaInject
     lateinit var flowIdentity: FlowIdentity
-
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
-
     @CordaInject
     lateinit var transactionBuilderFactory: TransactionBuilderFactory
-
     @CordaInject
     lateinit var identityService: IdentityService
-
     @CordaInject
     lateinit var notaryLookup: NotaryLookupService
-
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
@@ -54,31 +48,22 @@ class ExchangeFaultyFlow @JsonConstructor constructor(private val params: RpcSta
     override fun call(): SignedTransactionDigest {
         val mapOfParams: Map<String, String> = jsonMarshallingService.parseJson(params.parametersInJson)
 
-        val receiver =
-            with(mapOfParams["receiver"] ?: throw BadRpcStartFlowRequestException("Parameter \"receiver\" missing.")) {
-                CordaX500Name.parse(this)
-            }
+        val receiver = with(mapOfParams["receiver"] ?: throw BadRpcStartFlowRequestException("Parameter \"receiver\" missing.")) {
+            CordaX500Name.parse(this)
+        }
         val recipientParty = identityService.partyFromName(receiver)
             ?: throw NoSuchElementException("No party found for X500 name $receiver")
 
-        val gives =
-            with(mapOfParams["gives"] ?: throw BadRpcStartFlowRequestException("Parameter \"gives\" missing.")) {
-                FruitType.valueOf(this)
-            }
-        val qt1 = with(
-            mapOfParams["given_quantity"]
-                ?: throw BadRpcStartFlowRequestException("Parameter \"given_quantity\" missing.")
-        ) {
+        val gives = with(mapOfParams["gives"] ?: throw BadRpcStartFlowRequestException("Parameter \"gives\" missing.")) {
+            FruitType.valueOf(this)
+        }
+        val qt1 = with(mapOfParams["given_quantity"] ?: throw BadRpcStartFlowRequestException("Parameter \"given_quantity\" missing.")) {
             this.toInt()
         }
-        val wants =
-            with(mapOfParams["wants"] ?: throw BadRpcStartFlowRequestException("Parameter \"wants\" missing.")) {
-                FruitType.valueOf(this)
-            }
-        val qt2 = with(
-            mapOfParams["wanted_quantity"]
-                ?: throw BadRpcStartFlowRequestException("Parameter \"wanted_quantity\" missing.")
-        ) {
+        val wants = with(mapOfParams["wants"] ?: throw BadRpcStartFlowRequestException("Parameter \"wants\" missing.")) {
+            FruitType.valueOf(this)
+        }
+        val qt2 = with(mapOfParams["wanted_quantity"] ?: throw BadRpcStartFlowRequestException("Parameter \"wanted_quantity\" missing.")) {
             this.toInt()
         }
         val message = mapOfParams["message"] ?: ""
@@ -87,8 +72,8 @@ class ExchangeFaultyFlow @JsonConstructor constructor(private val params: RpcSta
         val us = flowIdentity.ourIdentity
 
         //1. Generate transaction
-        val fruitState1 = FruitState(gives, qt1, message, us, recipientParty)
-        val fruitState2 = FruitState(wants, qt2, message, recipientParty, us)
+        val fruitState1 = FruitState(gives,qt1,message,us,recipientParty)
+        val fruitState2 = FruitState(wants,qt2,message,recipientParty,us)
         val txCommand = Command(FruitContract.Commands.Exchange(), fruitState1.participants.map { it.owningKey })
         val txBuilder = transactionBuilderFactory.create()
             .setNotary(notary)
@@ -110,10 +95,10 @@ class ExchangeFaultyFlow @JsonConstructor constructor(private val params: RpcSta
             )
         )
 
-        //5. FAULT: notarized but not broadcast
+        //5. Notarise and record the transaction in both parties' vaults.
         val notarisedTx = flowEngine.subFlow(
             FinalityFlow(
-                fullySignedTx, setOf(),
+                fullySignedTx, setOf(otherPartySession),
             )
         )
 
@@ -125,8 +110,9 @@ class ExchangeFaultyFlow @JsonConstructor constructor(private val params: RpcSta
     }
 }
 
-@InitiatedBy(ExchangeFaultyFlow::class)
-class ExchangeFaultyFlowAcceptor(val otherPartySession: FlowSession) : Flow<SignedTransaction> {
+
+@InitiatedBy(ExchangeFruitFlow::class)
+class ExchangeFruitFlowAcceptor(val otherPartySession: FlowSession) : Flow<SignedTransaction> {
     @CordaInject
     lateinit var flowEngine: FlowEngine
 

@@ -1,8 +1,8 @@
-package net.corda.solarsystem.states
+package net.corda.fruit.states
 
 import com.google.gson.Gson
-import net.corda.solarsystem.contracts.FruitContract
-import net.corda.solarsystem.schema.FruitSchemaV1
+import net.corda.fruit.contracts.FruitContract
+import net.corda.fruit.schema.FruitSchemaV1
 import net.corda.v5.application.identity.AbstractParty
 import net.corda.v5.application.identity.Party
 import net.corda.v5.application.utilities.JsonRepresentable

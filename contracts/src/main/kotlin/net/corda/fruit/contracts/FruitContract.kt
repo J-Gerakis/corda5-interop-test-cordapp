@@ -1,6 +1,6 @@
-package net.corda.solarsystem.contracts
+package net.corda.fruit.contracts
 
-import net.corda.solarsystem.states.FruitState
+import net.corda.fruit.states.FruitState
 import net.corda.v5.ledger.contracts.*
 import net.corda.v5.ledger.transactions.LedgerTransaction
 import net.corda.v5.ledger.transactions.outputsOfType

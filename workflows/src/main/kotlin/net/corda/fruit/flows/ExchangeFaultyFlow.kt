@@ -1,7 +1,8 @@
-package net.corda.solarsystem.flows
+package net.corda.fruit.flows
 
-import net.corda.solarsystem.contracts.ProbeContract
-import net.corda.solarsystem.states.ProbeState
+import net.corda.fruit.contracts.FruitContract
+import net.corda.fruit.states.FruitState
+import net.corda.fruit.states.FruitType
 import net.corda.systemflows.CollectSignaturesFlow
 import net.corda.systemflows.FinalityFlow
 import net.corda.systemflows.ReceiveFinalityFlow
@@ -19,85 +20,89 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.contracts.Command
 import net.corda.v5.ledger.contracts.requireThat
 import net.corda.v5.ledger.services.NotaryLookupService
-import net.corda.v5.ledger.services.TransactionService
 import net.corda.v5.ledger.transactions.SignedTransaction
 import net.corda.v5.ledger.transactions.SignedTransactionDigest
 import net.corda.v5.ledger.transactions.TransactionBuilderFactory
 
-/**
- * This flow allows two parties (the [Launcher] and the [Target]) to say hello to one another via the [ProbeState].
- *
- * In our simple example, the [Acceptor] will only accepts a valid Probe.
- *
- * These flows have deliberately been implemented by using only the call() method for ease of understanding. In
- * practice, we would recommend splitting up the various stages of the flow into sub-routines.
- *
- * All methods called within the [FlowLogic] sub-class need to be annotated with the @Suspendable annotation.
- */
 @InitiatingFlow
 @StartableByRPC
-class LaunchProbeFlow @JsonConstructor constructor(private val params: RpcStartFlowRequestParameters) :
+class ExchangeFaultyFlow @JsonConstructor constructor(private val params: RpcStartFlowRequestParameters) :
     Flow<SignedTransactionDigest> {
+
     @CordaInject
     lateinit var flowEngine: FlowEngine
+
     @CordaInject
     lateinit var flowIdentity: FlowIdentity
+
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
-    @CordaInject
-    lateinit var transactionService: TransactionService
+
     @CordaInject
     lateinit var transactionBuilderFactory: TransactionBuilderFactory
+
     @CordaInject
     lateinit var identityService: IdentityService
+
     @CordaInject
     lateinit var notaryLookup: NotaryLookupService
+
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    /**
-     * The flow logic is encapsulated within the call() method.
-     */
     @Suspendable
     override fun call(): SignedTransactionDigest {
-        // parse parameters
         val mapOfParams: Map<String, String> = jsonMarshallingService.parseJson(params.parametersInJson)
 
-        val message = with(mapOfParams["message"] ?: throw BadRpcStartFlowRequestException("Parameter \"message\" missing.")) {
-            this
-        }
+        val receiver =
+            with(mapOfParams["receiver"] ?: throw BadRpcStartFlowRequestException("Parameter \"receiver\" missing.")) {
+                CordaX500Name.parse(this)
+            }
+        val recipientParty = identityService.partyFromName(receiver)
+            ?: throw NoSuchElementException("No party found for X500 name $receiver")
 
-        val planetaryOnly = with(mapOfParams["planetaryOnly"] ?: throw BadRpcStartFlowRequestException("Parameter \"planetaryOnly\" missing.")) {
-            this.toBoolean()
+        val gives =
+            with(mapOfParams["gives"] ?: throw BadRpcStartFlowRequestException("Parameter \"gives\" missing.")) {
+                FruitType.valueOf(this)
+            }
+        val qt1 = with(
+            mapOfParams["given_quantity"]
+                ?: throw BadRpcStartFlowRequestException("Parameter \"given_quantity\" missing.")
+        ) {
+            this.toInt()
         }
-
-        val target = with(mapOfParams["target"] ?: throw BadRpcStartFlowRequestException("Parameter \"target\" missing.")) {
-            CordaX500Name.parse(this)
+        val wants =
+            with(mapOfParams["wants"] ?: throw BadRpcStartFlowRequestException("Parameter \"wants\" missing.")) {
+                FruitType.valueOf(this)
+            }
+        val qt2 = with(
+            mapOfParams["wanted_quantity"]
+                ?: throw BadRpcStartFlowRequestException("Parameter \"wanted_quantity\" missing.")
+        ) {
+            this.toInt()
         }
-        val recipientParty = identityService.partyFromName(target)
-            ?: throw NoSuchElementException("No party found for X500 name $target")
+        val message = mapOfParams["message"] ?: ""
 
         val notary = notaryLookup.notaryIdentities.first()
+        val us = flowIdentity.ourIdentity
 
-        // Stage 1.
-        // Generate an unsigned transaction.
-        val probeState = ProbeState(message, planetaryOnly, flowIdentity.ourIdentity, recipientParty)
-        val txCommand = Command(ProbeContract.Commands.Launch(), probeState.participants.map { it.owningKey })
+        //1. Generate transaction
+        val fruitState1 = FruitState(gives, qt1, message, us, recipientParty)
+        val fruitState2 = FruitState(wants, qt2, message, recipientParty, us)
+        val txCommand = Command(FruitContract.Commands.Exchange(), fruitState1.participants.map { it.owningKey })
         val txBuilder = transactionBuilderFactory.create()
             .setNotary(notary)
-            .addOutputState(probeState, ProbeContract.ID)
+            .addOutputState(fruitState1, FruitContract.ID)
+            .addOutputState(fruitState2, FruitContract.ID)
             .addCommand(txCommand)
 
-        // Stage 2.
-        // Verify that the transaction is valid.
+        //2. Verify that the transaction is valid.
         txBuilder.verify()
 
-        // Stage 3.
-        // Sign the transaction.
+        //3. Sign the transaction.
         val partSignedTx = txBuilder.sign()
 
-        // Stage 4.
-        // Send the state to the counterparty, and receive it back with their signature.
+        //4. Send the state to the counterparty, and receive it back with their signature.
         val otherPartySession = flowMessaging.initiateFlow(recipientParty)
         val fullySignedTx = flowEngine.subFlow(
             CollectSignaturesFlow(
@@ -105,11 +110,10 @@ class LaunchProbeFlow @JsonConstructor constructor(private val params: RpcStartF
             )
         )
 
-        // Stage 5.
-        // Notarise and record the transaction in both parties' vaults.
+        //5. FAULT: notarized but not broadcast
         val notarisedTx = flowEngine.subFlow(
             FinalityFlow(
-                fullySignedTx, setOf(otherPartySession),
+                fullySignedTx, setOf(),
             )
         )
 
@@ -121,17 +125,16 @@ class LaunchProbeFlow @JsonConstructor constructor(private val params: RpcStartF
     }
 }
 
-@InitiatedBy(LaunchProbeFlow::class)
-class LaunchProbeFlowAcceptor(val otherPartySession: FlowSession) : Flow<SignedTransaction> {
+@InitiatedBy(ExchangeFaultyFlow::class)
+class ExchangeFaultyFlowAcceptor(val otherPartySession: FlowSession) : Flow<SignedTransaction> {
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
     // instead, for now, doing this so it can be unit tested separately:
     fun isValid(stx: SignedTransaction) {
         requireThat {
-
-            val output = stx.tx.outputs.single().data
-            "This must be an Probe transaction." using (output is ProbeState)
+            val outputs = stx.tx.outputs
+            "This must be an Exchange transaction." using (outputs[0].data is FruitState && outputs[1].data is FruitState)
         }
     }
 
@@ -144,5 +147,3 @@ class LaunchProbeFlowAcceptor(val otherPartySession: FlowSession) : Flow<SignedT
         return flowEngine.subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
     }
 }
-
-

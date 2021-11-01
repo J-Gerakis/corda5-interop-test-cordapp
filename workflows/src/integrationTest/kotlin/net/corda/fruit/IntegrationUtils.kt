@@ -1,4 +1,4 @@
-package net.corda.solarsystem
+package net.corda.fruit
 
 import com.google.gson.GsonBuilder
 import kong.unirest.HttpResponse
@@ -66,7 +66,7 @@ fun startFlow(
 
 
 inline fun <R> eventually(
-    duration: Duration = Duration.ofSeconds(5),
+    duration: Duration = Duration.ofSeconds(10),
     waitBetween: Duration = Duration.ofMillis(100),
     waitBefore: Duration = waitBetween,
     test: () -> R

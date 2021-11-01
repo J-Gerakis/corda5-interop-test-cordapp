@@ -1,8 +1,8 @@
-package net.corda.solarsystem.flows
+package net.corda.fruit.flows
 
-import net.corda.solarsystem.contracts.FruitContract
-import net.corda.solarsystem.states.FruitState
-import net.corda.solarsystem.states.FruitType
+import net.corda.fruit.contracts.FruitContract
+import net.corda.fruit.states.FruitState
+import net.corda.fruit.states.FruitType
 import net.corda.systemflows.CollectSignaturesFlow
 import net.corda.systemflows.FinalityFlow
 import net.corda.systemflows.ReceiveFinalityFlow
