@@ -1,12 +1,11 @@
 package net.corda.solarsystem.contracts
 
 import net.corda.solarsystem.states.FruitState
-import net.corda.v5.ledger.contracts.CommandData
-import net.corda.v5.ledger.contracts.Contract
-import net.corda.v5.ledger.contracts.requireSingleCommand
-import net.corda.v5.ledger.contracts.requireThat
+import net.corda.v5.ledger.contracts.*
 import net.corda.v5.ledger.transactions.LedgerTransaction
 import net.corda.v5.ledger.transactions.outputsOfType
+import java.lang.IllegalStateException
+import java.security.PublicKey
 
 class FruitContract : Contract {
     companion object {
@@ -17,12 +16,21 @@ class FruitContract : Contract {
     override fun verify(tx: LedgerTransaction) {
 
         val command = tx.commands.requireSingleCommand<Commands>()
-        //if (command::class.java.name == "Exchange")
 
+        when(command.value){
+            is Commands.Exchange -> exchangeContractRules(tx)
+            is Commands.GiveAway -> giveAwayExchangeRules(tx)
+            else -> throw IllegalStateException("Unknown command: ${command.value}")
+        }
+    }
+
+    private fun exchangeContractRules(tx: LedgerTransaction) {
+        val command = tx.commands.requireSingleCommand<Commands>()
         requireThat {
+            "Two output states should be created." using (tx.outputs.size == 2)
             val out1 = tx.outputsOfType<FruitState>()[0]
             val out2 = tx.outputsOfType<FruitState>()[1]
-            "Two output states should be created." using (tx.outputs.size == 2)
+
             "The emitter and receiver cannot be the same entity in the same state." using (out1.emitter != out1.receiver && out2.emitter != out2.receiver)
             "The emitter and receiver must match across states." using (out1.emitter == out2.receiver && out2.emitter == out1.receiver)
 
@@ -33,8 +41,20 @@ class FruitContract : Contract {
         }
     }
 
+    private fun giveAwayExchangeRules(tx: LedgerTransaction) {
+        val command = tx.commands.requireSingleCommand<Commands>()
+        val outs = tx.outputsOfType<FruitState>()
+        val currentSigners = mutableSetOf<PublicKey>()
+        outs.forEach { out -> currentSigners.addAll(out.participants.map { it.owningKey } ) }
+        requireThat {
+            "At least one output state should be created." using (tx.outputs.isNotEmpty())
+            "All of the participants must be signers." using (command.signers.toSet() == currentSigners)
+            //emitter is not a recipient -> checked in flow
+        }
+    }
+
     interface Commands : CommandData {
-        class Exchange : Commands
-        class GiveAway : Commands
+        class Exchange : Commands, TypeOnlyCommandData()
+        class GiveAway : Commands, TypeOnlyCommandData()
     }
 }

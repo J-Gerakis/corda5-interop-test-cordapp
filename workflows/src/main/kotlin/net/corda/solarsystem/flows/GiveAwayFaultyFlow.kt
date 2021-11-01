@@ -17,6 +17,7 @@ import net.corda.v5.application.services.IdentityService
 import net.corda.v5.application.services.json.JsonMarshallingService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.contracts.Command
+import net.corda.v5.ledger.contracts.Requirements.using
 import net.corda.v5.ledger.contracts.requireThat
 import net.corda.v5.ledger.services.NotaryLookupService
 import net.corda.v5.ledger.transactions.SignedTransaction
@@ -25,7 +26,7 @@ import net.corda.v5.ledger.transactions.TransactionBuilderFactory
 
 @InitiatingFlow
 @StartableByRPC
-class GiveAwayFlow @JsonConstructor constructor(private val params: RpcStartFlowRequestParameters) :
+class GiveAwayFaultyFlow @JsonConstructor constructor(private val params: RpcStartFlowRequestParameters) :
     Flow<SignedTransactionDigest> {
 
     @CordaInject
@@ -65,7 +66,7 @@ class GiveAwayFlow @JsonConstructor constructor(private val params: RpcStartFlow
         if(recipientPartyList.contains(us)) throw IllegalArgumentException("Emitter cannot be part of recipient's list")
 
         //1. Generate transaction
-        val txCommand = Command(FruitContract.Commands.GiveAway(), recipientPartyList.map{ it.owningKey }.plus(us.owningKey) )
+        val txCommand = Command(FruitContract.Commands.GiveAway(), recipientPartyList.map { it.owningKey })
         val txBuilder = transactionBuilderFactory.create()
             .setNotary(notary)
             .addCommand(txCommand)
@@ -86,7 +87,7 @@ class GiveAwayFlow @JsonConstructor constructor(private val params: RpcStartFlow
         //5. Notarise and record the transaction in both parties' vaults.
         val notarisedTx = flowEngine.subFlow(
             FinalityFlow(
-                fullySignedTx, otherPartySessions,
+                fullySignedTx, setOf(),
             )
         )
 
@@ -98,8 +99,8 @@ class GiveAwayFlow @JsonConstructor constructor(private val params: RpcStartFlow
     }
 }
 
-@InitiatedBy(GiveAwayFlow::class)
-class GiveAwayFlowAcceptor(val otherPartySession: FlowSession) : Flow<SignedTransaction> {
+@InitiatedBy(GiveAwayFaultyFlow::class)
+class GiveAwayFaultyFlowAcceptor(val otherPartySession: FlowSession) : Flow<SignedTransaction> {
     @CordaInject
     lateinit var flowEngine: FlowEngine
 
@@ -122,10 +123,3 @@ class GiveAwayFlowAcceptor(val otherPartySession: FlowSession) : Flow<SignedTran
         return flowEngine.subFlow(ReceiveFinalityFlow(otherPartySession, expectedTxId = txId))
     }
 }
-
-data class GiveAwayFlowJSON(
-    val receivers: List<String>,
-    val fruitType: String,
-    val quantity: Int,
-    val message: String = ""
-)

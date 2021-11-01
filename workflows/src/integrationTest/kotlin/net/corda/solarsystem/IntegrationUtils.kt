@@ -9,8 +9,12 @@ import net.corda.test.dev.network.Nodes
 import java.time.Duration
 import java.util.*
 
+const val NETWORK = "fruit-trading"
+
 fun Nodes<Node>.adele() = getNode("adele")
 fun Nodes<Node>.bonnie() = getNode("bonnie")
+fun Nodes<Node>.clarence() = getNode("clarence")
+fun Nodes<Node>.danny() = getNode("danny")
 
 
 fun retrieveOutcome(flowId: String): HttpResponse<JsonNode> {
@@ -27,6 +31,16 @@ fun createExchangeParams(receiverName:String, gives:String, givenQty:Int, wants:
             "given_quantity" to "$givenQty",
             "wants" to wants,
             "wanted_quantity" to "$wantedQty",
+            "message" to message))
+}
+
+fun createGiveAwayParams(recipients: List<String>, type:String, quantity:Int, message:String): String {
+    return GsonBuilder()
+        .create()
+        .toJson(mapOf(
+            "receivers" to recipients,
+            "fruitType" to type,
+            "quantity" to "$quantity",
             "message" to message))
 }
 

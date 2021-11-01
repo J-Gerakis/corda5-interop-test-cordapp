@@ -1,25 +1,29 @@
 package net.corda.solarsystem
 
 import kong.unirest.json.JSONObject
-import net.corda.solarsystem.flows.ExchangeFaultyFlow
-import net.corda.solarsystem.flows.ExchangeFruitFlow
+import net.corda.solarsystem.flows.GiveAwayFaultyFlow
+import net.corda.solarsystem.flows.GiveAwayFlow
 import net.corda.solarsystem.states.FruitType
-import net.corda.test.dev.network.*
+import net.corda.test.dev.network.TestNetwork
+import net.corda.test.dev.network.withFlow
+import net.corda.test.dev.network.x500Name
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import java.util.*
 
-class ExchangeFruitFlowTest {
+class GiveAwayFruitFlowTest {
 
     companion object {
         @JvmStatic
         @BeforeAll
         fun setup() {
             TestNetwork.forNetwork(NETWORK).verify {
-                hasNode("adele").withFlow<ExchangeFruitFlow>()
-                hasNode("bonnie").withFlow<ExchangeFruitFlow>()
+                hasNode("adele").withFlow<GiveAwayFlow>()
+                hasNode("bonnie").withFlow<GiveAwayFlow>()
+                hasNode("clarence").withFlow<GiveAwayFlow>()
+                hasNode("danny").withFlow<GiveAwayFlow>()
             }
         }
     }
@@ -27,21 +31,23 @@ class ExchangeFruitFlowTest {
 
 
     @Test
-    fun `Happy path with two participants`() {
+    fun `Happy path with multiple participants`() {
         TestNetwork.forNetwork(NETWORK).use {
-            val receiver = bonnie()
+            val recipientList = listOf(
+                bonnie().x500Name.toString(),
+                clarence().x500Name.toString(),
+                danny().x500Name.toString()
+            )
             adele().httpRpc {
                 val clientId = "client-${UUID.randomUUID()}"
                 val flowId = with(startFlow(
-                    flowName = ExchangeFruitFlow::class.java.name,
+                    flowName = GiveAwayFlow::class.java.name,
                     clientId = clientId,
-                    parametersInJson = createExchangeParams(
-                        receiverName = receiver.x500Name.toString(),
-                        gives = FruitType.APPLE.name,
-                        givenQty = 10,
-                        wants = FruitType.BANANA.name,
-                        wantedQty = 8,
-                        message = "transaction 1"
+                    parametersInJson = createGiveAwayParams(
+                        recipients = recipientList,
+                        type = FruitType.APPLE.name,
+                        quantity = 30,
+                        message = "transaction give away 1"
                     )
                 )){
                     Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
@@ -62,22 +68,26 @@ class ExchangeFruitFlowTest {
         }
     }
 
+
+
     @Test
-    fun `Unhappy path with two participants`(){
+    fun `Unhappy path with multiple participants`() {
         TestNetwork.forNetwork(NETWORK).use {
-            val receiver = bonnie()
+            val recipientList = listOf(
+                bonnie().x500Name.toString(),
+                clarence().x500Name.toString(),
+                danny().x500Name.toString()
+            )
             adele().httpRpc {
                 val clientId = "client-${UUID.randomUUID()}"
                 val flowId = with(startFlow(
-                    flowName = ExchangeFaultyFlow::class.java.name,
+                    flowName = GiveAwayFaultyFlow::class.java.name,
                     clientId = clientId,
-                    parametersInJson = createExchangeParams(
-                        receiverName = receiver.x500Name.toString(),
-                        gives = FruitType.APPLE.name,
-                        givenQty = 10,
-                        wants = FruitType.BANANA.name,
-                        wantedQty = 8,
-                        message = "transaction 2 faulty"
+                    parametersInJson = createGiveAwayParams(
+                        recipients = recipientList,
+                        type = FruitType.APPLE.name,
+                        quantity = 30,
+                        message = "transaction give away 2"
                     )
                 )){
                     Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
@@ -101,6 +111,4 @@ class ExchangeFruitFlowTest {
 
         }
     }
-
 }
-
