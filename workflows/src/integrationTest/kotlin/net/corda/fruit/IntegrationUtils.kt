@@ -1,11 +1,19 @@
 package net.corda.fruit
 
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import kong.unirest.HttpResponse
 import kong.unirest.JsonNode
 import kong.unirest.Unirest
+import net.corda.client.rpc.proxy.persistence.PersistenceRPCOps
+import net.corda.client.rpc.proxy.persistence.RpcNamedQueryRequestBuilder
+import net.corda.fruit.schema.FruitSchema
+import net.corda.fruit.schema.FruitSchemaV1
+import net.corda.fruit.states.FruitState
 import net.corda.test.dev.network.Node
 import net.corda.test.dev.network.Nodes
+import net.corda.test.dev.network.httpRpcClient
+import net.corda.v5.base.util.seconds
 import java.time.Duration
 import java.util.*
 
@@ -22,15 +30,22 @@ fun retrieveOutcome(flowId: String): HttpResponse<JsonNode> {
     return request.asJson()
 }
 
-fun createExchangeParams(receiverName:String, gives:String, givenQty:Int, wants:String, wantedQty:Int, message:String): String {
+fun createExchangeParams(receiverName:String, gives:String): String {
     return GsonBuilder()
         .create()
         .toJson(mapOf(
             "receiver" to receiverName,
-            "gives" to gives,
-            "given_quantity" to "$givenQty",
-            "wants" to wants,
-            "wanted_quantity" to "$wantedQty",
+            "gives" to gives
+            )
+        )
+}
+
+fun createIssueParams(fruit:String, quantity:String, message:String): String {
+    return GsonBuilder()
+        .create()
+        .toJson(mapOf(
+            "fruit" to fruit,
+            "quantity" to quantity,
             "message" to message))
 }
 
@@ -62,6 +77,24 @@ fun startFlow(
         .body(body)
 
     return request.asJson()
+}
+
+fun getFruitInVault(node: Node): MutableList<FruitSchemaV1.PersistentFruit> {
+    val accumulatedFruitStates = mutableListOf<FruitSchemaV1.PersistentFruit>()
+    node.httpRpcClient<PersistenceRPCOps, Unit> {
+        val durableCursor = query(
+            RpcNamedQueryRequestBuilder("FruitSchemaV1.PersistentFruit.FindAll")
+                .build()
+        )
+            .build()
+
+        var poll = durableCursor.poll(100, 20.seconds)
+        poll.values.forEach {
+            val fruitState = Gson().fromJson(it.json, FruitSchemaV1.PersistentFruit::class.java)
+            accumulatedFruitStates.add(fruitState)
+        }
+    }
+    return accumulatedFruitStates
 }
 
 

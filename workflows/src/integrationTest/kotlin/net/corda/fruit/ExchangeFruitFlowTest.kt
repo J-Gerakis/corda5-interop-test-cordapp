@@ -1,10 +1,16 @@
 package net.corda.fruit
 
 import kong.unirest.json.JSONObject
+import net.corda.client.rpc.proxy.persistence.PersistenceRPCOps
+import net.corda.client.rpc.proxy.persistence.RpcNamedQueryRequestBuilder
 import net.corda.fruit.flows.ExchangeFaultyFlow
 import net.corda.fruit.flows.ExchangeFruitFlow
+import net.corda.fruit.flows.IssueFruitFlow
+import net.corda.fruit.schema.FruitSchemaV1
+import net.corda.fruit.states.FruitState
 import net.corda.fruit.states.FruitType
 import net.corda.test.dev.network.*
+import net.corda.v5.base.util.seconds
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -30,6 +36,32 @@ class ExchangeFruitFlowTest {
     fun `Happy path with two participants`() {
         TestNetwork.forNetwork(NETWORK).use {
             val receiver = bonnie()
+
+            adele().httpRpc {
+                val clientId = "client-${UUID.randomUUID()}"
+                 with(
+                    startFlow(
+                        flowName = IssueFruitFlow::class.java.name,
+                        clientId = clientId,
+                        parametersInJson = createIssueParams(
+                            fruit = FruitType.APPLE.name,
+                            quantity = "10",
+                            message = "transaction 1"
+                        )
+                    )
+                ) {
+                    Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
+                    Assertions.assertThat(body.`object`.get("clientId")).isEqualTo(clientId)
+                    val flowId = body.`object`.get("flowId") as JSONObject
+                    Assertions.assertThat(flowId).isNotNull
+                    flowId.get("uuid") as String
+                }
+            }
+
+            val fruitInVault = getFruitInVault(adele())
+            assert(fruitInVault.size >= 1)
+            val apple : FruitSchemaV1.PersistentFruit  = fruitInVault[0]
+
             adele().httpRpc {
                 val clientId = "client-${UUID.randomUUID()}"
                 val flowId = with(startFlow(
@@ -37,11 +69,7 @@ class ExchangeFruitFlowTest {
                     clientId = clientId,
                     parametersInJson = createExchangeParams(
                         receiverName = receiver.x500Name.toString(),
-                        gives = FruitType.APPLE.name,
-                        givenQty = 10,
-                        wants = FruitType.BANANA.name,
-                        wantedQty = 8,
-                        message = "transaction 1"
+                        gives = apple.linearId.toString()
                     )
                 )){
                     Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
@@ -59,13 +87,77 @@ class ExchangeFruitFlowTest {
                 }
             }
 
+            val fruitInVaultB = getFruitInVault(bonnie())
+            assert(fruitInVaultB.size >= 1)
+
         }
     }
+
+
+    @Test
+    fun `Issue Fruit`() {
+        TestNetwork.forNetwork(NETWORK).use {
+            adele().httpRpc {
+                val clientId = "client-${UUID.randomUUID()}"
+                with(
+                    startFlow(
+                        flowName = IssueFruitFlow::class.java.name,
+                        clientId = clientId,
+                        parametersInJson = createIssueParams(
+                            fruit = FruitType.APPLE.name,
+                            quantity = "10",
+                            message = "transaction 1"
+                        )
+                    )
+                ) {
+                    Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
+                    Assertions.assertThat(body.`object`.get("clientId")).isEqualTo(clientId)
+                    val output = body.toString()
+                    println(output)
+                    val flowId = body.`object`.get("flowId") as JSONObject
+                    Assertions.assertThat(flowId).isNotNull
+                    flowId.get("uuid") as String
+                }
+            }
+
+        }
+
+    }
+
+
+
 
     @Test
     fun `Unhappy path with two participants`(){
         TestNetwork.forNetwork(NETWORK).use {
-            val receiver = bonnie()
+            val receiver = clarence()
+
+
+            adele().httpRpc {
+                val clientId = "client-${UUID.randomUUID()}"
+                 with(
+                    startFlow(
+                        flowName = IssueFruitFlow::class.java.name,
+                        clientId = clientId,
+                        parametersInJson = createIssueParams(
+                            fruit = FruitType.APPLE.name,
+                            quantity = "10",
+                            message = "transaction 1"
+                        )
+                    )
+                ) {
+                    Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
+                    Assertions.assertThat(body.`object`.get("clientId")).isEqualTo(clientId)
+                    val flowId = body.`object`.get("flowId") as JSONObject
+                    Assertions.assertThat(flowId).isNotNull
+                    flowId.get("uuid") as String
+                }
+            }
+
+            val fruitInVault = getFruitInVault(adele())
+            assert(fruitInVault.size >= 1)
+            val apple : FruitSchemaV1.PersistentFruit  = fruitInVault[0]
+
             adele().httpRpc {
                 val clientId = "client-${UUID.randomUUID()}"
                 val flowId = with(startFlow(
@@ -73,11 +165,7 @@ class ExchangeFruitFlowTest {
                     clientId = clientId,
                     parametersInJson = createExchangeParams(
                         receiverName = receiver.x500Name.toString(),
-                        gives = FruitType.APPLE.name,
-                        givenQty = 10,
-                        wants = FruitType.BANANA.name,
-                        wantedQty = 8,
-                        message = "transaction 2 faulty"
+                        gives = apple.linearId.toString(),
                     )
                 )){
                     Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
@@ -99,8 +187,11 @@ class ExchangeFruitFlowTest {
                 }
             }
 
+            val fruitInVaultC = getFruitInVault(clarence())
+            assert(fruitInVaultC.size == 0) { "Clarence has ${fruitInVault.size} in her vault" }
         }
     }
+
 
 }
 

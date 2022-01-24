@@ -3,6 +3,7 @@ package net.corda.fruit.contracts
 import net.corda.fruit.states.FruitState
 import net.corda.v5.ledger.contracts.*
 import net.corda.v5.ledger.transactions.LedgerTransaction
+import net.corda.v5.ledger.transactions.inputsOfType
 import net.corda.v5.ledger.transactions.outputsOfType
 import java.lang.IllegalStateException
 import java.security.PublicKey
@@ -20,24 +21,38 @@ class FruitContract : Contract {
         when(command.value){
             is Commands.Exchange -> exchangeContractRules(tx)
             is Commands.GiveAway -> giveAwayExchangeRules(tx)
+            is Commands.Issue -> issueFruitRules(tx)
             else -> throw IllegalStateException("Unknown command: ${command.value}")
         }
+    }
+
+    private fun issueFruitRules(tx: LedgerTransaction) {
+        val command = tx.commands.requireSingleCommand<Commands>()
+        requireThat {
+            "One State should be created." using (tx.outputs.size == 1)
+            val out1 = tx.outputsOfType<FruitState>()[0]
+
+            "All of the participants must be signers." using (command.signers.containsAll(out1.participants.map { it.owningKey }))
+            "The quantity must at least 1" using (out1.quantity >= 1)
+        }
+
     }
 
     private fun exchangeContractRules(tx: LedgerTransaction) {
         val command = tx.commands.requireSingleCommand<Commands>()
         requireThat {
-            "Two output states should be created." using (tx.outputs.size == 2)
+            "One output states should be created." using (tx.outputs.size == 1)
             val out1 = tx.outputsOfType<FruitState>()[0]
-            val out2 = tx.outputsOfType<FruitState>()[1]
 
-            "The emitter and receiver cannot be the same entity in the same state." using (out1.emitter != out1.receiver && out2.emitter != out2.receiver)
-            "The emitter and receiver must match across states." using (out1.emitter == out2.receiver && out2.emitter == out1.receiver)
+            "One input state should be consumed." using  (tx.inputStates.size == 1)
+            val input = tx.inputsOfType<FruitState>()[0]
+
+            "The emitter and receiver cannot be the same entity in the same state." using (out1.emitter != out1.owner)
 
             "All of the participants must be signers." using (command.signers.containsAll(out1.participants.map { it.owningKey }))
-            "All of the participants must be signers." using (command.signers.containsAll(out2.participants.map { it.owningKey }))
-            "The quantity must at least 1" using (out1.quantity >= 1 && out2.quantity >= 1)
-            "Tokens exchanged must be different" using (out1.fruitType != out2.fruitType)
+            "All of the participants must be signers." using (command.signers.containsAll(input.participants.map { it.owningKey }))
+            "The quantity must at least 1" using (out1.quantity >= 1 && input.quantity >= 1)
+            "Tokens exchanged must be the same" using (out1.fruitType == input.fruitType)
         }
     }
 
@@ -56,5 +71,6 @@ class FruitContract : Contract {
     interface Commands : CommandData {
         class Exchange : Commands, TypeOnlyCommandData()
         class GiveAway : Commands, TypeOnlyCommandData()
+        class Issue : Commands, TypeOnlyCommandData()
     }
 }

@@ -1,3 +1,5 @@
+tag: 5.0.0-INTEROP-SNAPSHOT
+registry: engineering-docker.software.r3.com
 nodes:
   adele:
     debug: true
@@ -12,4 +14,6 @@ nodes:
     debug: true
     x500: "C=GB, L=FOURTH, O=DANNY"
   notary:
+    debug: true
     notary: true
+    signature_validating_notary: true 

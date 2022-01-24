@@ -9,7 +9,9 @@ import net.corda.v5.application.utilities.JsonRepresentable
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.UniqueIdentifier
 import net.corda.v5.ledger.contracts.BelongsToContract
+import net.corda.v5.ledger.contracts.CommandAndState
 import net.corda.v5.ledger.contracts.LinearState
+import net.corda.v5.ledger.contracts.OwnableState
 import net.corda.v5.ledger.schemas.PersistentState
 import net.corda.v5.ledger.schemas.QueryableState
 import net.corda.v5.persistence.MappedSchema
@@ -20,12 +22,17 @@ data class FruitState(
     val quantity:Int,
     val message:String = "",
     val emitter: Party,
-    val receiver: Party,
-
+    override val owner: AbstractParty,
     override val linearId: UniqueIdentifier = UniqueIdentifier()
-) : LinearState, QueryableState, JsonRepresentable {
+
+
+) : LinearState, QueryableState, JsonRepresentable, OwnableState{
     /** The public keys of the involved parties. */
-    override val participants: List<AbstractParty> get() = listOf(emitter, receiver)
+    override val participants: List<AbstractParty> get() = listOf(emitter, owner)
+
+    override fun withNewOwner(newOwner: AbstractParty): CommandAndState {
+        return CommandAndState(FruitContract.Commands.Exchange(), this.copy(owner = newOwner))
+    }
 
     override fun generateMappedObject(schema: MappedSchema): PersistentState {
         return when (schema) {
@@ -34,7 +41,7 @@ data class FruitState(
                 this.quantity,
                 this.message,
                 this.emitter.name.toString(),
-                this.receiver.name.toString(),
+                this.owner.nameOrNull().toString(),
                 this.linearId.id
             )
             else -> throw IllegalArgumentException("Unrecognised schema $schema")
@@ -43,7 +50,7 @@ data class FruitState(
 
     fun toDto(): FruitStateDto {
         return FruitStateDto(fruitType.name,quantity,message,
-            emitter.name.toString(), receiver.name.toString(),
+            emitter.name.toString(), owner.nameOrNull().toString(),
             linearId.id.toString())
     }
 
@@ -51,6 +58,7 @@ data class FruitState(
     override fun toJsonString(): String {
         return Gson().toJson(this.toDto())
     }
+
 }
 
 data class FruitStateDto(
@@ -58,7 +66,7 @@ data class FruitStateDto(
     val quantity:Int,
     val message:String,
     val emitter:String,
-    val receiver:String,
+    val owner:String,
     val linearId: String
 )
 

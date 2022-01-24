@@ -16,13 +16,20 @@ import net.corda.v5.application.injection.CordaInject
 import net.corda.v5.application.services.IdentityService
 import net.corda.v5.application.services.json.JsonMarshallingService
 import net.corda.v5.application.services.json.parseJson
+import net.corda.v5.application.services.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.util.seconds
 import net.corda.v5.ledger.contracts.Command
+import net.corda.v5.ledger.contracts.StateAndRef
 import net.corda.v5.ledger.contracts.requireThat
 import net.corda.v5.ledger.services.NotaryLookupService
+import net.corda.v5.ledger.services.vault.IdentityStateAndRefPostProcessor
+import net.corda.v5.ledger.services.vault.StateStatus
 import net.corda.v5.ledger.transactions.SignedTransaction
 import net.corda.v5.ledger.transactions.SignedTransactionDigest
 import net.corda.v5.ledger.transactions.TransactionBuilderFactory
+import java.util.*
+import kotlin.NoSuchElementException
 
 @InitiatingFlow
 @StartableByRPC
@@ -43,6 +50,8 @@ class ExchangeFruitFlow @JsonConstructor constructor(private val params: RpcStar
     lateinit var notaryLookup: NotaryLookupService
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
+    @CordaInject
+    lateinit var persistenceService: PersistenceService
 
     @Suspendable
     override fun call(): SignedTransactionDigest {
@@ -54,31 +63,31 @@ class ExchangeFruitFlow @JsonConstructor constructor(private val params: RpcStar
         val recipientParty = identityService.partyFromName(receiver)
             ?: throw NoSuchElementException("No party found for X500 name $receiver")
 
-        val gives = with(mapOfParams["gives"] ?: throw BadRpcStartFlowRequestException("Parameter \"gives\" missing.")) {
-            FruitType.valueOf(this)
+        val gives:String = with(mapOfParams["gives"] ?: throw BadRpcStartFlowRequestException("Parameter \"gives\" missing.")){
+            this
         }
-        val qt1 = with(mapOfParams["given_quantity"] ?: throw BadRpcStartFlowRequestException("Parameter \"given_quantity\" missing.")) {
-            this.toInt()
-        }
-        val wants = with(mapOfParams["wants"] ?: throw BadRpcStartFlowRequestException("Parameter \"wants\" missing.")) {
-            FruitType.valueOf(this)
-        }
-        val qt2 = with(mapOfParams["wanted_quantity"] ?: throw BadRpcStartFlowRequestException("Parameter \"wanted_quantity\" missing.")) {
-            this.toInt()
-        }
-        val message = mapOfParams["message"] ?: ""
 
         val notary = notaryLookup.notaryIdentities.first()
-        val us = flowIdentity.ourIdentity
+
+        val cursor = persistenceService.query<StateAndRef<FruitState>>(
+            "LinearState.findByUuidAndStateStatus",
+            mapOf("uuid" to UUID.fromString(gives), "stateStatus" to StateStatus.UNCONSUMED),
+            IdentityStateAndRefPostProcessor.POST_PROCESSOR_NAME
+        )
+
+        val lastState = cursor.poll(1, 20.seconds)
+            .values
+            .single()
+
 
         //1. Generate transaction
-        val fruitState1 = FruitState(gives,qt1,message,us,recipientParty)
-        val fruitState2 = FruitState(wants,qt2,message,recipientParty,us)
+        val fruitState1 = lastState.state.data.withNewOwner(recipientParty).ownableState
         val txCommand = Command(FruitContract.Commands.Exchange(), fruitState1.participants.map { it.owningKey })
+
         val txBuilder = transactionBuilderFactory.create()
             .setNotary(notary)
-            .addOutputState(fruitState1, FruitContract.ID)
-            .addOutputState(fruitState2, FruitContract.ID)
+            .addInputState(lastState)
+            .addOutputState(fruitState1, FruitContract.ID,notary)
             .addCommand(txCommand)
 
         //2. Verify that the transaction is valid.
@@ -120,7 +129,8 @@ class ExchangeFruitFlowAcceptor(val otherPartySession: FlowSession) : Flow<Signe
     fun isValid(stx: SignedTransaction) {
         requireThat {
             val outputs = stx.tx.outputs
-            "This must be an Exchange transaction." using (outputs[0].data is FruitState && outputs[1].data is FruitState)
+            val inputs = stx.tx.inputs
+            "This must be an Exchange transaction." using (inputs.isNotEmpty() && outputs[0].data is FruitState)
         }
     }
 

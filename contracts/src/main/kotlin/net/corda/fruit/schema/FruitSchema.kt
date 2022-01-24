@@ -38,7 +38,7 @@ object FruitSchemaV1: MappedSchema(
         var emitterName:String,
 
         @Column(name = "receiver_name")
-        var receiverName:String,
+        var ownerName:String,
 
         @Column(name = "linear_id")
         @Convert(converter = UUIDConverter::class)
