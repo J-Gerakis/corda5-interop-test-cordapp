@@ -1,3 +1,5 @@
+tag: 5.0.0-INTEROP-SNAPSHOT
+registry: engineering-docker.software.r3.com
 nodes:
   adele:
     debug: true

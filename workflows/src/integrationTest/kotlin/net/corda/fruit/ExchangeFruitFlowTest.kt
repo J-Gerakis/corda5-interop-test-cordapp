@@ -3,6 +3,7 @@ package net.corda.fruit
 import kong.unirest.json.JSONObject
 import net.corda.fruit.flows.ExchangeFaultyFlow
 import net.corda.fruit.flows.ExchangeFruitFlow
+import net.corda.fruit.flows.GetFruitRecordFlow
 import net.corda.fruit.states.FruitType
 import net.corda.test.dev.network.*
 import org.apache.http.HttpStatus
@@ -24,6 +25,41 @@ class ExchangeFruitFlowTest {
         }
     }
 
+    @Test
+    fun `Get Flow`() {
+        TestNetwork.forNetwork(NETWORK).use {
+            adele().httpRpc {
+                val clientId = "client-${UUID.randomUUID()}"
+                val flowId = with(
+                    startFlow(
+                        flowName = GetFruitRecordFlow::class.java.name,
+                        clientId = clientId,
+                        parametersInJson = createExchangeParams(
+                            receiverName = "adele",
+                            gives = FruitType.APPLE.name,
+                            givenQty = 10,
+                            wants = FruitType.BANANA.name,
+                            wantedQty = 8,
+                            message = "transaction 1"
+                        )
+                    )
+                ) {
+                    Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
+                    Assertions.assertThat(body.`object`.get("clientId")).isEqualTo(clientId)
+                    val flowId = body.`object`.get("flowId") as JSONObject
+                    Assertions.assertThat(flowId).isNotNull
+                    flowId.get("uuid") as String
+                }
+
+                eventually {
+                    with(retrieveOutcome(flowId)) {
+                        Assertions.assertThat(status).isEqualTo(HttpStatus.SC_OK)
+                        Assertions.assertThat(body.`object`.get("status")).isEqualTo("COMPLETED")
+                    }
+                }
+            }
+        }
+    }
 
 
     @Test

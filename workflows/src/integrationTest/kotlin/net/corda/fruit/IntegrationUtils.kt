@@ -15,7 +15,7 @@ fun Nodes<Node>.adele() = getNode("adele")
 fun Nodes<Node>.bonnie() = getNode("bonnie")
 fun Nodes<Node>.clarence() = getNode("clarence")
 fun Nodes<Node>.danny() = getNode("danny")
-
+fun Nodes<*>.notary() = getNode("notary")
 
 fun retrieveOutcome(flowId: String): HttpResponse<JsonNode> {
     val request = Unirest.get("flowstarter/flowoutcome/$flowId").header("Content-Type", "application/json")

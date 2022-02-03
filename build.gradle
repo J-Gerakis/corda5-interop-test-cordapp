@@ -16,7 +16,7 @@ subprojects {
 
     tasks.withType(KotlinCompile).configureEach {
         kotlinOptions {
-            allWarningsAsErrors = true
+            allWarningsAsErrors = false
             jvmTarget = "11"
             freeCompilerArgs += [
                     "-Xjvm-default=all",
