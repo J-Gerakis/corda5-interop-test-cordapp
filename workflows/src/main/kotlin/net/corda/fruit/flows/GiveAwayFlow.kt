@@ -2,7 +2,7 @@ package net.corda.fruit.flows
 
 import net.corda.fruit.contracts.FruitContract
 import net.corda.fruit.states.FruitState
-import net.corda.fruit.states.FruitType
+import net.corda.fruit.states.FruitState.FruitType
 import net.corda.systemflows.CollectSignaturesFlow
 import net.corda.systemflows.FinalityFlow
 import net.corda.systemflows.ReceiveFinalityFlow
@@ -22,6 +22,7 @@ import net.corda.v5.ledger.services.NotaryLookupService
 import net.corda.v5.ledger.transactions.SignedTransaction
 import net.corda.v5.ledger.transactions.SignedTransactionDigest
 import net.corda.v5.ledger.transactions.TransactionBuilderFactory
+import java.time.Instant
 
 @InitiatingFlow
 @StartableByRPC
@@ -70,7 +71,7 @@ class GiveAwayFlow @JsonConstructor constructor(private val params: RpcStartFlow
             .setNotary(notary)
             .addCommand(txCommand)
         recipientPartyList.forEach { participant ->
-            txBuilder.addOutputState(FruitState(fruit,individualAmount,mapOfParams.message,us,participant))
+            txBuilder.addOutputState(FruitState(fruit,individualAmount,mapOfParams.message,participant, Instant.now()))
         }
 
         //2. Verify that the transaction is valid.

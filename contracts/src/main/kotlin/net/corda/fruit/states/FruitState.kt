@@ -13,19 +13,21 @@ import net.corda.v5.ledger.contracts.LinearState
 import net.corda.v5.ledger.schemas.PersistentState
 import net.corda.v5.ledger.schemas.QueryableState
 import net.corda.v5.persistence.MappedSchema
+import java.time.Instant
 
 @BelongsToContract(FruitContract::class)
 data class FruitState(
     val fruitType:FruitType,
     val quantity:Int,
     val message:String = "",
-    val emitter: Party,
-    val receiver: Party,
-
+    val owner: Party,
+    val timestamp: Instant = Instant.now(),
     override val linearId: UniqueIdentifier = UniqueIdentifier()
 ) : LinearState, QueryableState, JsonRepresentable {
     /** The public keys of the involved parties. */
-    override val participants: List<AbstractParty> get() = listOf(emitter, receiver)
+    override val participants: List<AbstractParty> get() = listOf(owner)
+
+    fun withNewOwner(newOwner: AbstractParty): FruitState { return copy(owner = newOwner as Party) }
 
     override fun generateMappedObject(schema: MappedSchema): PersistentState {
         return when (schema) {
@@ -33,8 +35,8 @@ data class FruitState(
                 this.fruitType.name,
                 this.quantity,
                 this.message,
-                this.emitter.name.toString(),
-                this.receiver.name.toString(),
+                this.owner.name.toString(),
+                this.timestamp,
                 this.linearId.id
             )
             else -> throw IllegalArgumentException("Unrecognised schema $schema")
@@ -43,7 +45,7 @@ data class FruitState(
 
     fun toDto(): FruitStateDto {
         return FruitStateDto(fruitType.name,quantity,message,
-            emitter.name.toString(), receiver.name.toString(),
+            owner.name.toString(), timestamp.toString(),
             linearId.id.toString())
     }
 
@@ -51,16 +53,18 @@ data class FruitState(
     override fun toJsonString(): String {
         return Gson().toJson(this.toDto())
     }
+
+    data class FruitStateDto(
+        val fruitType:String,
+        val quantity:Int,
+        val message:String,
+        val owner:String,
+        val timestamp:String,
+        val linearId: String
+    )
+
+    @CordaSerializable
+    enum class FruitType{APPLE,BANANA,WATERMELON}
 }
 
-data class FruitStateDto(
-    val fruitType:String,
-    val quantity:Int,
-    val message:String,
-    val emitter:String,
-    val receiver:String,
-    val linearId: String
-)
 
-@CordaSerializable
-enum class FruitType{APPLE,BANANA}

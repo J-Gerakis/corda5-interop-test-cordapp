@@ -3,7 +3,7 @@ package net.corda.fruit
 import kong.unirest.json.JSONObject
 import net.corda.fruit.flows.GiveAwayFaultyFlow
 import net.corda.fruit.flows.GiveAwayFlow
-import net.corda.fruit.states.FruitType
+import net.corda.fruit.states.FruitState.FruitType
 import net.corda.test.dev.network.TestNetwork
 import net.corda.test.dev.network.withFlow
 import net.corda.test.dev.network.x500Name

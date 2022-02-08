@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.*
 
 plugins {
     id 'org.jetbrains.kotlin.jvm' apply false
-    id 'net.corda.cordapp.cordapp-configuration'
+//    id 'net.corda.cordapp.cordapp-configuration'
 }
 
 logger.quiet("SDK version: {}", JavaVersion.current())
@@ -16,7 +16,7 @@ subprojects {
 
     tasks.withType(KotlinCompile).configureEach {
         kotlinOptions {
-            allWarningsAsErrors = true
+            allWarningsAsErrors = false
             jvmTarget = "11"
             freeCompilerArgs += [
                     "-Xjvm-default=all",

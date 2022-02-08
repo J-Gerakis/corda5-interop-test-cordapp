@@ -3,7 +3,7 @@ package net.corda.fruit
 import kong.unirest.json.JSONObject
 import net.corda.fruit.flows.ExchangeFaultyFlow
 import net.corda.fruit.flows.ExchangeFruitFlow
-import net.corda.fruit.states.FruitType
+import net.corda.fruit.states.FruitState.FruitType
 import net.corda.test.dev.network.*
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions

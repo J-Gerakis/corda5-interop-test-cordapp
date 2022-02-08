@@ -1,3 +1,5 @@
+tag: 5.0.0-INTEROP-SNAPSHOT
+registry: engineering-docker.software.r3.com
 nodes:
   adele:
     debug: true
@@ -5,11 +7,11 @@ nodes:
   bonnie:
     debug: true
     x500: "C=GB, L=FOURTH, O=BONNIE"
-  clarence:
-    debug: true
-    x500: "C=GB, L=FOURTH, O=CLARENCE"
-  danny:
-    debug: true
-    x500: "C=GB, L=FOURTH, O=DANNY"
+#  clarence:
+#    debug: true
+#    x500: "C=GB, L=FOURTH, O=CLARENCE"
+#  danny:
+#    debug: true
+#    x500: "C=GB, L=FOURTH, O=DANNY"
   notary:
     notary: true

@@ -14,25 +14,37 @@ class FruitContract : Contract {
     }
 
     override fun verify(tx: LedgerTransaction) {
-
         val command = tx.commands.requireSingleCommand<Commands>()
-
         when(command.value){
             is Commands.Exchange -> exchangeContractRules(tx)
             is Commands.GiveAway -> giveAwayExchangeRules(tx)
+            is Commands.Issue -> issueContractRules(tx)
             else -> throw IllegalStateException("Unknown command: ${command.value}")
         }
     }
 
+    private fun issueContractRules(tx: LedgerTransaction) {
+        val command = tx.commands.requireSingleCommand<Commands>()
+        requireThat {
+            "Unexpected inputs when issuing an artwork item" using tx.inputStates.isEmpty()
+            "Issuing an artwork item requires a single output state" using (tx.outputStates.size == 1)
+            "The output state must be of type ${FruitState::class.java.name}" using (tx.outputStates.single() is FruitState)
+            val outputState = tx.outputStates.single() as FruitState
+            "Only the owner needs to sign the transaction" using (command.signers.size == 1 && command.signers.single() == outputState.owner.owningKey)
+        }
+    }
+
+    //TODO: Exchange and GiveAway need to be modified or deleted, do not use them at the moment
     private fun exchangeContractRules(tx: LedgerTransaction) {
         val command = tx.commands.requireSingleCommand<Commands>()
         requireThat {
+            //TODO: process input states
             "Two output states should be created." using (tx.outputs.size == 2)
             val out1 = tx.outputsOfType<FruitState>()[0]
             val out2 = tx.outputsOfType<FruitState>()[1]
 
-            "The emitter and receiver cannot be the same entity in the same state." using (out1.emitter != out1.receiver && out2.emitter != out2.receiver)
-            "The emitter and receiver must match across states." using (out1.emitter == out2.receiver && out2.emitter == out1.receiver)
+            "The emitter and receiver cannot be the same entity in the same state." using (out1.owner != out2.owner)
+            //"The emitter and receiver must match across states." using (out1.emitter == out2.receiver && out2.emitter == out1.receiver)
 
             "All of the participants must be signers." using (command.signers.containsAll(out1.participants.map { it.owningKey }))
             "All of the participants must be signers." using (command.signers.containsAll(out2.participants.map { it.owningKey }))
@@ -55,6 +67,7 @@ class FruitContract : Contract {
 
     interface Commands : CommandData {
         class Exchange : Commands, TypeOnlyCommandData()
+        class Issue : Commands, TypeOnlyCommandData()
         class GiveAway : Commands, TypeOnlyCommandData()
     }
 }
