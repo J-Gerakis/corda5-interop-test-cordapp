@@ -1,18 +1,8 @@
-# Corda 5 Solar System UI
+# Getting Started with Create React App
 
-A UI that talks to the Corda5-SolarSystem Cordapp: https://github.com/corda/corda5-solarsystem-contracts-demo
-This UI demonstrates that planets can talk to one another by sending probes.
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-# Required Prerequisites:
-
-nodejs (npm)
-
-# Steps to run locally
-
-1. npm install (this will only need to be done once upon first run, it will create the necessary node-modules folder and package-lock.json files that are needed to run the application)
-2. npm start
-
-## Information on other available React Scripts
+## Available Scripts
 
 In the project directory, you can run:
 
