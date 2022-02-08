@@ -1,13 +1,13 @@
 tag: 5.0.0-INTEROP-SNAPSHOT
 registry: engineering-docker.software.r3.com
 nodes:
-  alice-fruit:
+  alice-token:
     windows: false
     system_properties:
       corda.artemis.rpc.broker.enable: true
     debug: true
     external_network: interop-net
-  bob-fruit:
+  bob-token:
     system_properties:
       corda.artemis.rpc.broker.enable: true
     debug: false
