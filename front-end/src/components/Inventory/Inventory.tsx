@@ -40,10 +40,10 @@ const Inventory: React.FC<Props> = ({ identity }) => {
   };
 
   return (
-    <div>
+    <div className="mb-8">
       <AddFruitModal open={isModalOpen} toggleModal={toggleModal} />
-      <div className="flex items-center justify-between">
-        <h5>Fruits</h5>
+      <div className="flex items-baseline justify-between">
+        <h4 className="mb-2">Fruits</h4>
         <IconButton
           className={identity === "alice" ? "" : "hidden"}
           data-tip
@@ -54,13 +54,13 @@ const Inventory: React.FC<Props> = ({ identity }) => {
           onClick={() => {
             toggleModal();
           }}
-        ></IconButton>
+        />
         <ReactTooltip id="addTip" place="top" effect="solid">
           Add New Fruit
         </ReactTooltip>
       </div>
       <div
-        className="mt-4 grid gap-x-8 gap-y-4 py-8 px-8 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 rounded"
+        className="mt-4 grid gap-x-8 gap-y-8 py-8 px-8 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 rounded"
         style={{ backgroundColor: "var(--color-medium-light-gray-100)" }}
       >
         {renderFruits()}

@@ -17,10 +17,10 @@ const MainLayout: React.FC<Props> = ({ identity }) => {
       <TopAppBar identity={identity} />
       <Container className="mt-10">
         <Row>
-          <Column lg={7} md={12}>
+          <Column lg={8} md={12}>
             <Inventory identity={identity} />
           </Column>
-          <Column lg={5} md={12}>
+          <Column lg={4} md={12}>
             <Token identity={identity} />
           </Column>
         </Row>
