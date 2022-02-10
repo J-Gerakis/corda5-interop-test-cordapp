@@ -5,12 +5,12 @@ nodes:
     windows: false
     system_properties:
       corda.artemis.rpc.broker.enable: true
-    debug: true
+    debug: false
     external_network: interop-net
   bob-token:
     system_properties:
       corda.artemis.rpc.broker.enable: true
-    debug: false
+    debug: true
     external_network: interop-net
   notary:
     notary: true

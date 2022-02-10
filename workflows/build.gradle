@@ -61,6 +61,9 @@ dependencies {
     cordaProvided "net.corda:corda-application:$cordaAPIVersion"
     cordaProvided "net.corda:corda-crypto-api:$cordaAPIVersion"
     cordaProvided "net.corda:corda-legacy-api:$cordaAPIVersion"
+    cordaProvided "net.corda:corda-cross-ledger:$cordaAPIVersion"
+    cordaProvided "net.corda:corda-client-extensions-rpc:$cordaAPIVersion"
+    cordaProvided "net.corda:corda-http-rpc-client:$cordaAPIVersion"
 
     cordapp "net.corda:corda-flows:$cordaAPIVersion"
     cordapp project(':contracts')

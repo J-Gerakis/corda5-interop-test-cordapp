@@ -62,10 +62,10 @@ class IssueFruitFlow @JsonConstructor constructor(private val params: RpcStartFl
             notarisedTx.sigs)
     }
 
+    data class IssueFruitJSON(
+        val fruitType:String,
+        val quantity: Int,
+        val message: String = ""
+    )
 }
 
-data class IssueFruitJSON(
-    val fruitType:String,
-    val quantity: Int,
-    val message: String = ""
-)

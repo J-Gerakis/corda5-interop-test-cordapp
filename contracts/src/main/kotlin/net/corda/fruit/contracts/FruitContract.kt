@@ -1,6 +1,7 @@
 package net.corda.fruit.contracts
 
 import net.corda.fruit.states.FruitState
+import net.corda.fruit.states.SalesOfferState
 import net.corda.v5.ledger.contracts.*
 import net.corda.v5.ledger.transactions.LedgerTransaction
 import net.corda.v5.ledger.transactions.outputsOfType
@@ -19,6 +20,8 @@ class FruitContract : Contract {
             is Commands.Exchange -> exchangeContractRules(tx)
             is Commands.GiveAway -> giveAwayExchangeRules(tx)
             is Commands.Issue -> issueContractRules(tx)
+            is Commands.InviteToBuy -> inviteToBuyRules(tx)
+            is Commands.Transfer -> transferRules(tx)
             else -> throw IllegalStateException("Unknown command: ${command.value}")
         }
     }
@@ -32,6 +35,19 @@ class FruitContract : Contract {
             val outputState = tx.outputStates.single() as FruitState
             "Only the owner needs to sign the transaction" using (command.signers.size == 1 && command.signers.single() == outputState.owner.owningKey)
         }
+    }
+
+    private fun inviteToBuyRules(tx: LedgerTransaction) {
+        //val command = tx.commands.requireSingleCommand<Commands>()
+        requireThat {
+            "Issuing an offer to buy requires a single output state" using (tx.outputStates.size == 1)
+            "The output state must be of type ${SalesOfferState::class.java.name}" using (tx.outputStates.single() is SalesOfferState)
+        }
+    }
+
+    @Suppress("unused_parameter")
+    private fun transferRules(tx: LedgerTransaction) {
+        //TODO
     }
 
     //TODO: Exchange and GiveAway need to be modified or deleted, do not use them at the moment
@@ -68,6 +84,8 @@ class FruitContract : Contract {
     interface Commands : CommandData {
         class Exchange : Commands, TypeOnlyCommandData()
         class Issue : Commands, TypeOnlyCommandData()
+        class Transfer : Commands, TypeOnlyCommandData()
+        class InviteToBuy : Commands, TypeOnlyCommandData()
         class GiveAway : Commands, TypeOnlyCommandData()
     }
 }

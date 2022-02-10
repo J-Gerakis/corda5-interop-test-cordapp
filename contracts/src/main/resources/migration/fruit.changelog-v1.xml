@@ -13,5 +13,19 @@
             <column name="timestamp" type="TIMESTAMP"/>
             <column name="linear_id" type="NVARCHAR(128)"/>
         </createTable>
+
+        <createTable tableName="sales_offer_states">
+            <column name="output_index" type="INT"/>
+            <column name="transaction_id" type="NVARCHAR(128)"/>
+            <column name="draft_tx_id" type="NVARCHAR(128)"/>
+            <column name="state_id" type="NVARCHAR(128)"/>
+            <column name="price" type="FLOAT"/>
+            <column name="fruit_type" type="NVARCHAR(64)"/>
+            <column name="quantity" type="INT"/>
+            <column name="seller_name" type="NVARCHAR(64)"/>
+            <column name="buyer_name" type="NVARCHAR(64)"/>
+            <column name="timestamp" type="TIMESTAMP"/>
+            <column name="linear_id" type="NVARCHAR(128)"/>
+        </createTable>
     </changeSet>
 </databaseChangeLog>
