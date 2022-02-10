@@ -37,16 +37,22 @@ const FruitItem: React.FC<Props> = ({ fruit }) => {
         </div>
         <p className="font-bold">{fruit.quantity}</p>
         <div className="my-4">
-          <Badge variant="green">For Sale</Badge>
+          <Badge variant={fruit.status === "available" ? "green" : "red"}>
+            {fruit.status}
+          </Badge>
         </div>
         <div
           className="w-full h-full rounded-b py-4"
           style={{ backgroundColor: "var(--color-medium-light-gray-200)" }}
         >
           <div className="flex w-full h-full items-center justify-center">
-            <Button size="small" variant="secondary">
-              Invite to Buy
-            </Button>
+            {fruit.status === "available" ? (
+              <Button size="small" variant="secondary">
+                Invite to Buy
+              </Button>
+            ) : (
+              <p>No Action</p>
+            )}
           </div>
         </div>
       </div>
