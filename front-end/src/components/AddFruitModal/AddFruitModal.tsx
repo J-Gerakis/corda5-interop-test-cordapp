@@ -40,7 +40,7 @@ const AddFruitModal: React.FC<Props> = ({ open, toggleModal }) => {
 
     setTimeout(() => {
       refreshFruitsInventory("alice");
-    }, 2000);
+    }, 1500);
 
     setQuantity("");
     setType("");

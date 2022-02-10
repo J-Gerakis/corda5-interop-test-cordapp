@@ -5,4 +5,5 @@ export interface Fruit {
   ownerName: string;
   timestamp: string;
   linearId: string;
+  status?: string;
 }

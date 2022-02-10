@@ -1,10 +1,10 @@
 import React, { useContext, useEffect } from "react";
-import { IconButton } from "@r3/r3-tooling-design-system/lib/exports.js";
-import ReactTooltip from "react-tooltip";
+import { Button } from "@r3/r3-tooling-design-system/lib/exports.js";
 
 import { FruitItem, AddFruitModal } from "../../components";
 import { FruitContext } from "../../context/fruit";
 import { useToggle } from "../../hooks/useToggle";
+import { Fruit } from "../../models/models";
 
 interface Props {
   identity: string;
@@ -22,6 +22,17 @@ const Inventory: React.FC<Props> = ({ identity }) => {
   }, [identity]);
 
   const renderFruits = () => {
+    const fakedFruit: Fruit = {
+      fruitType: "WATERMELON",
+      quantity: 12,
+      message: "",
+      ownerName: "alice",
+      timestamp: "time",
+      linearId: "linearId",
+      status: "sold",
+    };
+    fruitsAlice.push(fakedFruit);
+
     if (identity === "alice") {
       if (fruitsAlice.length === 0) {
         return <p className="text-center">No fruits yet.</p>;
@@ -40,29 +51,24 @@ const Inventory: React.FC<Props> = ({ identity }) => {
   };
 
   return (
-    <div>
+    <div
+      className="-mt-2 rounded-b rounded-tr mb-4"
+      style={{ backgroundColor: "var(--color-medium-light-gray-100)" }}
+    >
       <AddFruitModal open={isModalOpen} toggleModal={toggleModal} />
-      <div className="flex items-center justify-between">
-        <h5>Fruits</h5>
-        <IconButton
+      <div className="flex justify-start pl-8 pt-4">
+        <Button
           className={identity === "alice" ? "" : "hidden"}
-          data-tip
-          data-for="addTip"
-          icon="Plus"
-          size="medium"
+          size="small"
           variant="primary"
           onClick={() => {
             toggleModal();
           }}
-        ></IconButton>
-        <ReactTooltip id="addTip" place="top" effect="solid">
-          Add New Fruit
-        </ReactTooltip>
+        >
+          + New Fruit
+        </Button>
       </div>
-      <div
-        className="mt-4 grid gap-x-8 gap-y-4 py-8 px-8 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 rounded"
-        style={{ backgroundColor: "var(--color-medium-light-gray-100)" }}
-      >
+      <div className="mt-4 grid gap-x-8 gap-y-8 pt-2 pb-8 px-8 lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-2 rounded">
         {renderFruits()}
       </div>
     </div>

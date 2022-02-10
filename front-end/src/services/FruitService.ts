@@ -31,6 +31,7 @@ export const fetchAllFruits = async (identity: string): Promise<Fruit[]> => {
       ownerName: rawFruit.ownerName,
       timestamp: rawFruit.timestamp,
       linearId: rawFruit.linearId,
+      status: "available",
     };
     return fruit;
   });
